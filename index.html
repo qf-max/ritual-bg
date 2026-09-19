@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>苍祀 · 网页可玩版（2-6人·多AI）</title>
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 rx=%2718%27 fill=%27%237a4f2e%27/%3E%3Ctext x=%2750%27 y=%2768%27 font-size=%2752%27 text-anchor=%27middle%27 fill=%27%23f2e6d8%27 font-family=%27serif%27%3E祀%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#f2ecdf; --ink:#2a2420; --sub:#6b5f52; --line:#d6c9b2;
+    --brown:#7a4f2e; --clay:#b4633a; --green:#4e6e58; --blue:#3f5d75;
+    --sand:#e8dcc3; --card:#fbf8f1; --gold:#a8843c; --red:#93332a; --teal:#2e6b66;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--ink);font-family:"Noto Sans SC",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.6;min-height:100vh;}
+  button{font-family:inherit;cursor:pointer;border:none;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:14px;color:var(--ink);transition:all .15s;}
+  button:hover{background:var(--sand);}
+  button:disabled{opacity:.4;cursor:not-allowed;}
+  button.primary{background:var(--brown);color:#fff;border-color:var(--brown);}
+  button.primary:hover{background:#8a5c36;}
+  .hidden{display:none!important;}
+
+  /* ===== 设置界面 ===== */
+  #setup{max-width:760px;margin:0 auto;padding:40px 22px 60px;}
+  .hero-title{font-family:"Noto Serif SC",serif;font-size:clamp(30px,5vw,46px);font-weight:900;text-align:center;letter-spacing:.05em;margin-top:20px;}
+  .hero-sub{text-align:center;color:var(--sub);font-size:15px;margin:10px 0 30px;}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin:16px 0;}
+  .panel h3{font-family:"Noto Serif SC",serif;font-size:18px;margin-bottom:14px;color:var(--brown);}
+  .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:12px;}
+  .row label{font-size:14px;color:var(--sub);min-width:110px;}
+  .num-ctl{display:flex;align-items:center;gap:10px;}
+  .num-ctl button{width:34px;height:34px;font-size:18px;padding:0;display:flex;align-items:center;justify-content:center;}
+  .num-ctl .val{font-family:"Noto Serif SC",serif;font-size:20px;font-weight:700;min-width:26px;text-align:center;}
+  .seg{display:flex;gap:6px;flex-wrap:wrap;}
+  .seg button{border-radius:999px;font-size:13px;}
+  .seg button.on{background:var(--brown);color:#fff;border-color:var(--brown);}
+  .players-setup{margin-top:14px;}
+  .p-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--bg);}
+  .p-row .dot{width:22px;height:22px;border-radius:50%;flex:0 0 22px;}
+  .p-row .who{font-weight:500;font-size:14px;min-width:64px;}
+  .p-row select{font-family:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);flex:1;max-width:220px;}
+  .p-row .hint{font-size:12px;color:var(--sub);}
+  .start-btn{display:block;margin:24px auto 0;font-size:17px;padding:13px 46px;border-radius:12px;font-weight:700;letter-spacing:.1em;}
+  .modes{font-size:12.5px;color:var(--sub);margin-top:14px;background:var(--sand);border-radius:8px;padding:10px 14px;}
+
+  /* ===== 游戏界面 ===== */
+  #game{padding:14px 18px 30px;max-width:1380px;margin:0 auto;}
+  .topbar{display:flex;flex-wrap:wrap;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 16px;margin-bottom:12px;}
+  .topbar .round{font-family:"Noto Serif SC",serif;font-size:18px;font-weight:700;color:var(--brown);}
+  .topbar .turn{font-size:14px;font-weight:500;}
+  .topbar .turn .pj{font-weight:700;}
+  .topbar .spacer{flex:1;}
+  .topbar .skip-btn{background:var(--sand);border:1.5px solid var(--clay);color:var(--clay);font-weight:700;}
+  .topbar .skip-btn:disabled{opacity:.35;}
+  .topbar .help-btn{background:var(--card);border:1.5px solid var(--teal);color:var(--teal);font-weight:700;font-size:13px;}
+  .phase-tip{font-size:12px;color:var(--sub);}
+
+  .main-grid{display:grid;grid-template-columns:1fr 380px;gap:14px;align-items:start;}
+  @media(max-width:1080px){.main-grid{grid-template-columns:1fr;}}
+
+  .col-left{display:flex;flex-direction:column;gap:14px;}
+  .zones-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:12px;}
+  .zone-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;border-top:4px solid var(--brown);}
+  .zone-card h4{font-family:"Noto Serif SC",serif;font-size:15px;display:flex;justify-content:space-between;align-items:baseline;}
+  .zone-card h4 .base{font-size:11.5px;color:var(--sub);font-weight:400;}
+  .zone-card .bigcnt{font-size:11px;color:var(--clay);margin:1px 0 6px;}
+  .slots{display:flex;flex-direction:column;gap:3px;}
+  .slot{display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 8px;min-height:29px;}
+  .slot .res-ico{flex:0 0 30px;text-align:center;font-size:15px;font-weight:700;color:var(--brown);}
+  .slot .res-name{flex:1;font-size:13px;}
+  .slot .res-val{font-size:11px;color:var(--sub);}
+  .slot.filled{background:#e7e2d4;}
+  .slot.filled .res-ico{color:var(--sub);}
+  .slot.filled .owner{font-size:11px;color:var(--sub);}
+  .slot .mark{width:12px;height:12px;border-radius:3px;flex:0 0 12px;}
+
+  .sanct-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;}
+  .sanct-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;}
+  .sanct-card h5{font-size:13px;color:var(--sub);margin-bottom:6px;}
+  .sanct-card .ctl{font-size:13px;font-weight:500;}
+  .sanct-card .ctl .cname{font-weight:700;}
+  .totems{display:flex;gap:4px;margin-top:6px;min-height:18px;flex-wrap:wrap;}
+  .totem{width:16px;height:16px;border-radius:4px;display:inline-block;}
+  .totem.neutral{background:#b8ac94;}
+
+  /* 行动位 */
+  .actions-panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;}
+  .actions-panel h5{font-size:14px;color:var(--brown);margin-bottom:8px;font-weight:700;display:flex;align-items:center;gap:10px;}
+  .actions-panel h5 .phase-tip{font-size:12px;color:var(--teal);font-weight:500;}
+  .actions-wrap{display:flex;flex-direction:column;gap:5px;max-height:430px;overflow-y:auto;padding-right:2px;}
+  .actions-wrap .act-btn{width:100%;}
+  .w0tip{font-size:12px;color:var(--clay);background:var(--sand);border-radius:8px;padding:7px 10px;margin-bottom:4px;}
+  .slot.can-sac{border-color:var(--clay);cursor:pointer;}
+  .slot.can-sac:hover{background:#f3e6d2;}
+  .act-btn{font-size:12.5px;padding:6px 9px;border-radius:8px;border:1px solid var(--line);text-align:left;line-height:1.35;}
+  .act-btn .aw{font-size:10.5px;color:var(--sub);display:block;}
+  .act-btn .cost{display:inline-block;background:var(--sand);border-radius:4px;padding:0 5px;font-size:11px;margin-right:3px;}
+  .act-btn.can{background:#eef2ea;border-color:#9db89d;}
+  .act-btn.can:hover{background:#e2ead9;}
+  .act-btn.cant{opacity:.5;}
+  .act-btn.used{opacity:.3;text-decoration:line-through;}
+
+  /* 玩家条 */
+  .players-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;}
+  .pl-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;border-left:5px solid #999;}
+  .pl-card.active{box-shadow:0 0 0 2px var(--brown);}
+  .pl-card .phead{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+  .pl-card .pname{font-weight:700;font-size:14px;}
+  .pl-card .job-tag{font-size:11px;background:var(--sand);border-radius:999px;padding:1px 9px;color:var(--brown);}
+  .pl-card .score{font-family:"Noto Serif SC",serif;font-size:17px;font-weight:700;}
+  .pl-card .pmeta{font-size:11.5px;color:var(--sub);display:flex;gap:10px;flex-wrap:wrap;margin-bottom:5px;}
+  .pl-card .pres{display:flex;flex-wrap:wrap;gap:4px;}
+  .chip{font-size:11px;background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:1px 7px;}
+  .chip b{color:var(--brown);}
+  .pl-card .human{font-size:10.5px;color:var(--teal);font-weight:700;}
+  .pl-card .ai{font-size:10.5px;color:var(--sub);}
+  .pl-card .passive{font-size:11px;color:var(--sub);margin-top:4px;border-top:1px dashed var(--line);padding-top:4px;}
+
+  /* 日志 */
+  .log-panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;max-height:420px;overflow-y:auto;font-size:12.5px;}
+  .log-panel h5{font-size:14px;color:var(--brown);margin-bottom:8px;}
+  .log-entry{padding:3px 0;border-bottom:1px dotted var(--line);}
+  .log-entry .t{color:var(--sub);margin-right:6px;}
+  .log-entry .who{font-weight:700;}
+
+  /* 选择弹层 */
+  #pickOverlay{position:fixed;inset:0;background:rgba(30,24,18,.55);display:flex;align-items:center;justify-content:center;z-index:50;}
+  #pickBox{background:var(--card);border-radius:14px;padding:22px;max-width:460px;width:92%;max-height:80vh;overflow-y:auto;}
+  #pickBox h4{margin-bottom:12px;color:var(--brown);font-family:"Noto Serif SC",serif;font-size:18px;}
+  .pick-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;margin-bottom:6px;font-size:14px;}
+  .pick-item .cnt{font-size:12px;color:var(--sub);}
+  .pick-item .v{font-size:12px;color:var(--clay);}
+
+  /* 规则·术语弹层 */
+  #helpOverlay{position:fixed;inset:0;background:rgba(30,24,18,.6);display:flex;align-items:center;justify-content:center;z-index:60;}
+  #helpBox{background:var(--card);border-radius:14px;padding:22px;max-width:560px;width:94%;max-height:86vh;overflow-y:auto;}
+  #helpBox h4{margin-bottom:12px;color:var(--brown);font-family:"Noto Serif SC",serif;font-size:19px;}
+  .term-group{margin-bottom:12px;}
+  .term-group h5{font-size:13.5px;color:var(--teal);font-weight:700;margin-bottom:4px;border-left:3px solid var(--teal);padding-left:8px;}
+  .term-group p{font-size:13px;color:var(--ink);margin-bottom:3px;padding-left:11px;}
+  .term-group p b{color:var(--brown);}
+
+  /* 终局 */
+  #end{max-width:680px;margin:0 auto;padding:40px 22px;}
+  .end-title{font-family:"Noto Serif SC",serif;font-size:34px;font-weight:900;text-align:center;margin:10px 0 4px;}
+  .end-sub{text-align:center;color:var(--sub);font-size:14px;margin-bottom:26px;}
+  .end-list .pl-card{font-size:15px;}
+  .end-list .rank{font-size:22px;font-weight:900;color:var(--clay);min-width:40px;}
+  .end-detail{font-size:12px;color:var(--sub);margin-top:2px;}
+  .end-btn{display:block;margin:26px auto;font-size:15px;padding:11px 34px;border-radius:10px;}
+
+  .tl-note{font-size:12px;color:var(--sub);margin-top:10px;}
+  /* 献祭可点提示（桌面/移动通用） */
+  .slot.can-sac{position:relative;}
+  .slot.can-sac::after{content:'献祭';position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10.5px;color:var(--clay);background:#f6ead6;border:1px solid var(--clay);border-radius:4px;padding:0 5px;line-height:1.5;pointer-events:none;}
+  /* ===== 移动端适配 ===== */
+  @media(max-width:760px){
+    #setup{padding:22px 14px 50px;}
+    #game{padding:10px 12px 118px;}
+    .hero-title{font-size:36px;margin-top:12px;}
+    .hero-sub{font-size:13.5px;margin:8px 0 20px;}
+    .panel{padding:16px;}
+    .panel h3{font-size:17px;}
+    .row{gap:10px;margin-bottom:12px;}
+    .row label{min-width:72px;font-size:13.5px;}
+    .num-ctl button{width:44px;height:44px;font-size:20px;}
+  .num-ctl input{width:54px;text-align:center;font-size:15px;border:1px solid var(--line);border-radius:6px;padding:4px 2px;background:#fff;color:var(--brown);}
+    .seg button{padding:9px 14px;font-size:13.5px;}
+    .p-row{padding:11px 10px;}
+    .p-row select{font-size:14px;padding:8px;max-width:none;}
+    .start-btn{width:100%;font-size:18px;padding:15px;}
+    .modes{font-size:12px;padding:10px 12px;}
+
+    /* 顶栏吸顶，跳过/规则始终可用 */
+    .topbar{position:sticky;top:0;z-index:45;padding:8px 12px;gap:8px;border-radius:10px;box-shadow:0 2px 10px rgba(42,36,32,.08);}
+    .topbar .round{font-size:16px;}
+    .topbar .skip-btn,.topbar .help-btn{padding:10px 18px;font-size:14px;border-radius:10px;}
+    .phase-tip{font-size:12.5px;}
+
+    #barbBar{background:#5b2c2c;color:#f2e6d8;padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:10px;}
+  #barbBar b{color:#ffd9a0;}
+  .zone-card.blocked{opacity:.55;}
+  .zone-card.blocked::after{content:'被蛮族封锁';position:absolute;top:10px;right:10px;background:#5b2c2c;color:#ffe;font-size:11px;padding:2px 8px;border-radius:5px;}
+  .zones-grid{grid-template-columns:1fr;gap:10px;}
+    .zone-card{padding:12px;}
+    .zone-card h4{font-size:16px;}
+    .zone-card .base{font-size:12px;}
+    .zone-card .bigcnt{font-size:12px;}
+    .slot{min-height:44px;padding:6px 10px;gap:9px;border-radius:8px;}
+    .slot .res-ico{flex:0 0 38px;font-size:16px;}
+    .slot .res-name{font-size:14.5px;}
+    .slot .res-val{font-size:12.5px;}
+    .slot .mark{width:17px;height:17px;flex:0 0 17px;border-radius:4px;}
+    .slot.can-sac::after{font-size:11px;padding:0 6px;}
+
+    .sanct-row{grid-template-columns:repeat(2,1fr);gap:8px;}
+    .sanct-card{padding:10px;}
+    .sanct-card h5{font-size:12.5px;}
+    .sanct-card .ctl{font-size:12.5px;}
+    .totem{width:18px;height:18px;}
+
+    /* 固定底部行动栏：手机玩时行动按钮始终可见 */
+    .actions-panel{position:fixed;left:8px;right:8px;bottom:8px;z-index:40;max-height:46vh;border-radius:14px;box-shadow:0 -6px 26px rgba(42,36,32,.18);padding:10px 12px;}
+    .actions-panel h5{font-size:14.5px;}
+    .actions-wrap{max-height:35vh;gap:6px;}
+    .act-btn{padding:12px 13px;font-size:14px;border-radius:10px;}
+    .act-btn .aw{font-size:12px;}
+    .act-btn .cost{font-size:12.5px;padding:1px 7px;border-radius:5px;}
+    .w0tip{font-size:13px;padding:10px 11px;}
+
+    .players-strip{grid-template-columns:1fr;gap:8px;}
+    .pl-card{padding:12px;}
+    .pl-card .pname{font-size:15px;}
+    .pl-card .score{font-size:19px;}
+    .pl-card .pmeta{font-size:12px;}
+    .chip{font-size:11.5px;padding:2px 8px;}
+
+    .log-panel{max-height:none;font-size:13px;padding:12px;}
+    .pick-item{padding:14px 12px;font-size:15px;}
+    #pickBox{padding:18px;}
+    #helpBox{padding:18px;}
+    .term-group p{font-size:13.5px;}
+    #end{padding:24px 14px 50px;}
+    .end-title{font-size:30px;}
+    .end-btn{width:100%;font-size:17px;padding:14px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== 设置界面 ===== -->
+<div id="setup">
+  <div class="hero-title">苍 祀</div>
+  <p class="hero-sub">中式原始部落 · 工人放置 · 图腾控制 · 祭祀得分 —— 网页可玩版（规则基于 V4 平衡测试版）</p>
+
+  <div class="panel">
+    <h3>对局设置</h3>
+    <div class="row"><label>玩家总数</label>
+      <div class="num-ctl">
+        <button id="nMinus">−</button><span class="val" id="nVal">4</span><button id="nPlus">＋</button>
+      </div>
+      <span class="hint" style="font-size:12px;color:var(--sub)">2–6 人</span>
+    </div>
+    <div class="row"><label>人类玩家</label>
+      <div class="num-ctl">
+        <button id="hMinus">−</button><span class="val" id="hVal">1</span><button id="hPlus">＋</button>
+      </div>
+      <span class="hint" style="font-size:12px;color:var(--sub)">其余为 AI 自动行动</span>
+    </div>
+    <div class="row"><label>终局模式</label>
+      <div class="seg" id="modeSeg">
+        <button data-mode="rounds" class="on">固定回合</button>
+        <button data-mode="fixed_score">固定分数</button>
+      </div>
+    </div>
+    <div class="row" id="roundsRow"><label>回合数</label>
+      <div class="num-ctl">
+        <button id="rMinus">−</button><input type="number" id="rInput" min="5" max="15" step="1" value="9"><button id="rPlus">＋</button>
+      </div>
+      <span class="hint" style="font-size:12px;color:var(--sub)">5–15 轮</span>
+    </div>
+    <div class="row hidden" id="targetRow"><label>分数阈值</label>
+      <div class="num-ctl">
+        <button id="tMinus">−</button><input type="number" id="tInput" min="100" max="400" step="5" value="175"><button id="tPlus">＋</button>
+      </div>
+      <span class="hint" style="font-size:12px;color:var(--sub)">100–400 分</span>
+    </div>
+    <div class="row"><label>职业 DLC</label>
+      <div class="seg" id="dlcSeg">
+        <button data-dlc="0" class="on">基础版（无职业）</button>
+        <button data-dlc="1">职业 DLC</button>
+      </div>
+    </div>
+    <div class="row"><label>扩展 DLC</label>
+      <div class="seg" id="dlcExtSeg">
+        <button data-ext="tribute">上贡</button>
+        <button data-ext="barbarian">蛮族入侵</button>
+      </div>
+    </div>
+    <div class="modes">回合制：满设定轮数（默认 9）结算总分。固定分数：任意玩家达到设定阈值（默认按人数）后当前轮结束。职业 DLC 可选装六职业。扩展 DLC：上贡=上贡高价值物资晋官爵（每轮物资/分数/官祀区特权）；蛮族入侵=全玩家合作募军抵御，失败将损失物资、扣分、祭祀区封锁。</div>
+    <div class="players-setup" id="playersSetup"></div>
+    <button class="primary start-btn" id="startBtn">开 始 祭 祀</button>
+  </div>
+</div>
+
+<!-- ===== 游戏界面 ===== -->
+<div id="game" class="hidden">
+  <div class="topbar">
+    <span class="round">第 <span id="roundNum">1</span> / <span id="roundTotal">9</span> 轮</span>
+    <span class="turn" id="turnInfo">行动中</span>
+    <span class="spacer"></span>
+    <button class="help-btn" id="helpBtn">规则 · 术语</button>
+    <button class="skip-btn" id="skipBtn">跳 过</button>
+  </div>
+  <div class="main-grid">
+    <div class="col-left">
+      <div id="barbBar" class="hidden"></div>
+      <div class="zones-grid" id="zonesGrid"></div>
+      <div class="sanct-row" id="sanctRow"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="actions-panel">
+        <h5>行动工位 <span class="phase-tip" id="phaseTip"></span></h5>
+        <div class="actions-wrap" id="actionsWrap"></div>
+      </div>
+      <div class="log-panel"><h5>行动日志</h5><div id="logList"></div></div>
+      <div class="players-strip" id="playersStrip"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 终局界面 ===== -->
+<div id="end" class="hidden">
+  <div class="end-title">祭 祀 终 结</div>
+  <div class="end-sub" id="endSub"></div>
+  <div class="panel"><div class="end-list" id="endList"></div></div>
+  <button class="primary end-btn" id="againBtn">再 来 一 局</button>
+</div>
+
+<!-- ===== 选择弹层 ===== -->
+<div id="pickOverlay" class="hidden">
+  <div id="pickBox">
+    <h4 id="pickTitle">选择</h4>
+    <div id="pickList"></div>
+  </div>
+</div>
+
+<!-- ===== 规则·术语弹层 ===== -->
+<div id="helpOverlay" class="hidden">
+  <div id="helpBox">
+    <h4>规则与术语</h4>
+    <div id="helpList"></div>
+    <div class="modal-actions" style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;">
+      <button class="primary" id="helpCloseBtn">关 闭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ---------- 启发式 AI（移植自 ai_v4.py） ---------- */
+class HeuristicAI {
+  constructor(pid, params){
+    this.pid=pid;
+    const P=params||{};
+    this.primary=P.primary||choice(ZONES);
+    this.engine=P.engine!==undefined?P.engine:0.2+Math.random()*0.7;
+    this.totem=P.totem!==undefined?P.totem:0.2+Math.random()*0.7;
+    this.aggr=P.aggr!==undefined?P.aggr:0.3+Math.random()*0.5;
+    this.skip=P.skip!==undefined?P.skip:0.8+Math.random()*0.8;
+  }
+  job(game){ return game.players[this.pid].job; }
+  resVal(game,p,res){
+    const ps=game.zones[this.primary].filter(s=>s.res===res);
+    const pe=ps.filter(s=>s.owner===null);
+    if(pe.length) return pe[0].val+2.0;
+    if(ps.length){
+      for(const z of ZONES){
+        if(z===this.primary) continue;
+        for(const s of game.zones[z]) if(s.res===res && s.owner===null) return s.val*0.55;
+      }
+      return BASE_VALUES[res]*0.15;
+    }
+    for(const z of ZONES){
+      if(z===this.primary) continue;
+      for(const s of game.zones[z]) if(s.res===res && s.owner===null) return s.val*0.7;
+    }
+    return BASE_VALUES[res]*0.25;
+  }
+  sacVal(game,p,z,s){
+    let val=s.val+game.sanBonus(p.pid,z);
+    const filled=game.zoneFilled(z);
+    const prog={0:0.0,1:0.3,2:0.8,3:1.6,4:3.2,5:9.0}[filled]*(1+this.aggr*0.4);
+    let extra=0;
+    if(filled===5){
+      extra+=5.0;
+      if(game.controller(z)===p.pid) extra+=3.0;
+      if(this.job(game)==='大祭师') extra+=2.0;
+    }
+    return val+prog+extra;
+  }
+  gatherVal(game,p,spot){
+    const d=GATHER[spot]||DUAL[spot]||TRIPLE[spot];
+    if(!d) return 0;
+    let v=0;
+    for(const r in d.gain) v+=this.resVal(game,p,r)*d.gain[r];
+    if(d.bonus) v+=this.resVal(game,p,d.bonus[0])*d.bonus[1]*d.bonus[2];
+    if(this.job(game)==='丰饶使者' && spot in GATHER){
+      const main=Object.keys(d.gain).reduce((a,b)=>BASE_VALUES[a]>=BASE_VALUES[b]?a:b);
+      v+=this.resVal(game,p,main)*0.5;
+    }
+    return v/d.w;
+  }
+  totemVal(game,p,z){
+    const rem=game.remRounds();
+    const top=game.controller(z);
+    const route=z===this.primary?1.0:0.4;
+    const perRound=1.3*route;
+    const cb=perRound*rem+4*0.9*route+0.9*rem*route;
+    const cnt=game.sanctuaries[z].filter(x=>x===p.pid).length;
+    const job=this.job(game);
+    if(top===p.pid){
+      if(job==='万灵先知' && cnt>=2 && rem>=3 && p.totems>=2) return (1.2*rem*0.5)*(0.5+this.totem);
+      if(cnt>=2 && rem>=3 && p.totems>=2) return (1.0*rem*0.5)*(0.5+this.totem);
+      return 0.05;
+    }
+    let u=cb-0.4*cnt;
+    if(job==='图腾守护者') u+=2.4*route*1.2;
+    return Math.max(0,u)*(0.4+this.totem);
+  }
+  decide(game,p){
+    const cands=[];
+    const job=this.job(game);
+    for(const z of ZONES){
+      if(z===game.blockedZone) continue;
+      for(const s of game.zones[z]){
+        if(s.owner===null && (p.res[s.res]||0)>0){
+          cands.push(['sac',z,s.res,this.sacVal(game,p,z,s)]);
+        }
+      }
+    }
+    if(game.dlcTribute && game.officialZone && p.rank===3){
+      for(const s of game.officialZone){
+        if(s.owner===null && (p.res[s.res]||0)>0){
+          cands.push(['sac','官祀',s.res,s.val*1.0]);
+        }
+      }
+    }
+    for(const spot in GATHER){
+      if(!game.used.has(spot) && p.workers>=1) cands.push(['gather',spot,null,this.gatherVal(game,p,spot)]);
+    }
+    for(const spot in DUAL){
+      if(!game.used.has(spot) && p.workers>=2) cands.push(['gather',spot,null,this.gatherVal(game,p,spot)]);
+    }
+    for(const spot in TRIPLE){
+      if(!game.used.has(spot) && p.workers>=3) cands.push(['gather',spot,null,this.gatherVal(game,p,spot)]);
+    }
+    if(p.workers>=1){
+      for(const z of ZONES){
+        const avail=game.zones[z].filter(s=>s.owner===null && (p.res[s.res]||0)>0);
+        if(avail.length>=2){
+          const scored=avail.slice().sort((a,b)=>this.sacVal(game,p,z,b)-this.sacVal(game,p,z,a)).slice(0,2);
+          let u=scored.reduce((a,s)=>a+this.sacVal(game,p,z,s),0);
+          if(job==='大祭师') u*=1.06;
+          cands.push(['big_sac',z,null,u]);
+        }
+      }
+    }
+    for(const spot in CRAFT){
+      if(game.used.has(spot) || p.workers<1) continue;
+      const d=CRAFT[spot];
+      const haveAll=Object.keys(d.need).every(r=>(p.res[r]||0)>=d.need[r]);
+      if(!haveAll) continue;
+      let v=0;
+      for(const r in d.gain) v+=this.resVal(game,p,r)*d.gain[r];
+      if(job==='铸炉工匠') v+=this.resVal(game,p,'火种')*1.0;
+      cands.push(['craft',spot,null,v/d.w]);
+    }
+    if(game.dlcTribute && !p.tributeDone && p.rank<3){
+      const hi=Object.keys(p.res).filter(r=>BASE_VALUES[r]>=4 && (p.res[r]||0)>=2);
+      if(hi.length) cands.push(['tribute',hi[0],null,2.0]);
+    }
+    if(game.dlcBarbarian && !p.armyDone){
+      const have=Object.keys(p.res).filter(r=>p.res[r]>0);
+      if(have.length){
+        const low=have.slice().sort((a,b)=>BASE_VALUES[a]-BASE_VALUES[b])[0];
+        let u=1.5;
+        if(game.armyTotal<game.barbNeed) u+=1.1;
+        cands.push(['army',low,null,u]);
+      }
+    }
+    if(p.totems>0 && p.workers>=1){
+      for(const z of ZONES){
+        if(game.used.has('圣地-'+z)) continue;
+        if(game.sanctuaries[z].length>=game.totemLimit) continue;
+        const u=this.totemVal(game,p,z);
+        if(u>0.15) cands.push(['totem',z,null,u]);
+      }
+    }
+    cands.sort((a,b)=>b[3]-a[3]);
+    let thresh=this.skip;
+    if(job==='星象祭司') thresh*=0.85;
+    if(!cands.length || cands[0][3]<thresh) return ['skip'];
+    return cands[0];
+  }
+}
+
+
+/* ---------- 数据定义 ---------- */
+const BASE_VALUES = {'玉石':7,'珍珠':6,'青铜':4,'火种':4,'兽骨':4,'鱼鲜':3,'兽肉':3,
+                     '贝壳':3,'石材':3,'草药':3,'盐':3,'谷物':2,'木材':2,'野果':2};
+const ZONE_LAYOUT = {
+  '天地': [['玉石',7],['青铜',4],['火种',4],['兽骨',4],['谷物',2],['木材',2]],
+  '江海': [['珍珠',6],['火种',4],['鱼鲜',3],['贝壳',3],['盐',3],['木材',2]],
+  '山谷': [['玉石',5],['兽骨',4],['兽肉',3],['石材',3],['草药',3],['木材',2]],
+  '鱼米': [['鱼鲜',3],['兽肉',3],['草药',3],['贝壳',3],['谷物',2],['野果',2]],
+};
+const ZONES = ['天地','江海','山谷','鱼米'];
+const SANCT_RES = {'天地':['玉石','火种'],'江海':['鱼鲜','贝壳','珍珠'],'山谷':['石材','兽肉'],'鱼米':['谷物','野果']};
+const SANCT_ICON = {'天地':'山','江海':'海','山谷':'林','鱼米':'田'};
+const ZONE_COLOR = {'天地':'#7a4f2e','江海':'#3f5d75','山谷':'#4e6e58','鱼米':'#a8843c'};
+
+const GATHER = {
+  '采谷':{w:1,gain:{'谷物':2},bonus:null},
+  '捕鱼':{w:1,gain:{'鱼鲜':2},bonus:['贝壳',1,0.5]},
+  '狩猎':{w:1,gain:{'兽肉':1},bonus:['兽骨',1,0.5]},
+  '伐木':{w:1,gain:{'木材':2},bonus:['火种',1,0.5]},
+  '采石':{w:1,gain:{'石材':2},bonus:['玉石',1,0.5]},
+  '采果':{w:1,gain:{'野果':2},bonus:['草药',1,0.5]},
+};
+const CRAFT = {
+  '煮盐':{w:1,need:{'木材':1,'火种':1},gain:{'盐':2}},
+  '冶铜':{w:1,need:{'石材':1,'火种':1},gain:{'青铜':1}},
+};
+const DUAL = {
+  '深耕':{w:2,gain:{'谷物':3},bonus:null},
+  '远洋':{w:2,gain:{'鱼鲜':2,'贝壳':1},bonus:null},
+  '围猎':{w:2,gain:{'兽肉':2,'兽骨':1},bonus:null},
+  '开山':{w:2,gain:{'玉石':2,'石材':1},bonus:null},
+};
+const TRIPLE = {
+  '冶铜矿':{w:3,gain:{'青铜':2,'玉石':1,'火种':1}},
+  '采珠场':{w:3,gain:{'珍珠':2,'贝壳':2}},
+  '草药谷':{w:3,gain:{'草药':3,'野果':1}},
+};
+const JOB_NAMES = ['大祭师','铸炉工匠','丰饶使者','图腾守护者','星象祭司','万灵先知'];
+const JOB_DESC = {
+  '大祭师':'触发大祭额外+2分',
+  '铸炉工匠':'工匠行动不需火种，且额外+1火种',
+  '丰饶使者':'单工人采集50%几率主产出+1',
+  '图腾守护者':'立图腾后获得1圣地物资',
+  '星象祭司':'每次跳过+4分并保留1工人',
+  '万灵先知':'每轮开始从控制圣地额外获1物资',
+};
+const JOB_START = {'大祭师':{},'铸炉工匠':{'木材':1},'丰饶使者':{},'图腾守护者':{},'星象祭司':{},'万灵先知':{}};
+const FIXED_TARGETS = {2:180,3:180,4:175,5:170,6:165};
+const PLAYER_COLORS = ['#7a4f2e','#b4633a','#4e6e58','#3f5d75','#a8843c','#93332a'];
+
+/* ---------- 工具 ---------- */
+function rng(){ return Math.random(); }
+function choice(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+/* ---------- 引擎 ---------- */
+class Game {
+  constructor(cfg){
+    this.n = cfg.n;
+    this.neutral = (cfg.n === 2);
+    this.totemLimit = cfg.n===2 ? 3 : (cfg.n>=5 ? 5 : 4);
+    this.endMode = cfg.mode;
+    this.roundsTotal = cfg.rounds || 9;
+    this.fixedTarget = cfg.fixedTarget || FIXED_TARGETS[cfg.n];
+    this.dlcTribute = !!cfg.tribute;
+    this.dlcBarbarian = !!cfg.barbarian;
+    this.officialZone = null;
+    this.barbNeed = 0; this.army = {}; this.armyTotal = 0;
+    this.blockedZone = null; this.barbFailedPrev = false; this.barbPenaltyPlayers = [];
+    this.round = 0;
+    this.order = [];
+    for(let i=0;i<this.n;i++) this.order.push(i);
+    for(let i=this.n-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [this.order[i],this.order[j]]=[this.order[j],this.order[i]]; }
+    this.players = [];
+    for(let i=0;i<this.n;i++){
+      const p = {
+        pid:i, job:cfg.jobs[i], workers:5, totems:6, res:{'谷物':2,'木材':1},
+        score:0, zonePlace:{'天地':0,'江海':0,'山谷':0,'鱼米':0},
+        bigSac:0, reserved:0, skips:0, tributeDone:false, rank:0, armyDone:false,
+      };
+      for(const r in JOB_START[p.job]) p.res[r]=(p.res[r]||0)+JOB_START[p.job][r];
+      this.players.push(p);
+    }
+    this.zones = {};
+    for(const z of ZONES){
+      this.zones[z] = ZONE_LAYOUT[z].map(([res,val])=>({res,val,owner:null}));
+    }
+    this.sanctuaries = {}; for(const z of ZONES) this.sanctuaries[z]=[];
+    this.used = new Set();
+    this.skippedRound = [];
+    this.activeRound = new Set();
+    for(let i=0;i<this.n;i++) this.activeRound.add(i);
+    this.spotUse = {};
+    for(const s in GATHER) this.spotUse[s]=0;
+    for(const s in CRAFT) this.spotUse[s]=0;
+    for(const s in DUAL) this.spotUse[s]=0;
+    for(const s in TRIPLE) this.spotUse[s]=0;
+    for(const z of ZONES) this.spotUse['圣地-'+z]=0;
+    this.zonesCompleted = {}; for(const z of ZONES) this.zonesCompleted[z]=0;
+    this.endTrigger = 'rounds';
+    this.neutralRes = {};
+    this.log = [];
+    this.jobSkipDone = {};
+  }
+  controller(z){ return this.sanctuaries[z].length ? this.sanctuaries[z][this.sanctuaries[z].length-1] : null; }
+  sanBonus(pid,z){
+    if(this.controller(z)!==pid) return 0;
+    const cnt=this.sanctuaries[z].filter(x=>x===pid).length;
+    return cnt>=3?2:1;
+  }
+  zoneFilled(z){ return this.zones[z].filter(s=>s.owner!==null).length; }
+  remRounds(){ return this.roundsTotal-this.round; }
+
+  logEntry(who, msg){ this.log.push({r:this.round, who, msg}); }
+
+  /* 轮初 */
+  roundStart(){
+    for(const p of this.players){
+      p.workers = 5 + p.reserved;
+      p.reserved = 0;
+      p.tributeDone = false;
+      p.armyDone = false;
+      if(p.rank>=1){ const pick=choice(['谷物','木材','野果']); p.res[pick]=(p.res[pick]||0)+1; }
+      if(p.rank>=2) p.score+=1;
+      for(const z of ZONES){
+        const c = this.controller(z);
+        if(c!==null && c>=0 && c<this.n){
+          const opts=SANCT_RES[z];
+          const pick = opts[Math.floor(Math.random()*opts.length)];
+          this.players[c].res[pick]=(this.players[c].res[pick]||0)+1;
+        }
+      }
+      if(p.job==='万灵先知'){
+        const controlled=ZONES.filter(z=>this.controller(z)===p.pid);
+        if(controlled.length){
+          const z=choice(controlled), opts=SANCT_RES[z];
+          const pick=opts[Math.floor(Math.random()*opts.length)];
+          p.res[pick]=(p.res[pick]||0)+1;
+        }
+      }
+    }
+  }
+
+  /* 蛮族入侵（扩展 DLC）：合作募军抵御 */
+  barbPhase(){
+    if(!this.dlcBarbarian) return;
+    if(this.barbFailedPrev){
+      for(const pid of this.barbPenaltyPlayers){ const p=this.players[pid]; p.score-=2; }
+      for(const p of this.players){
+        const have=Object.keys(p.res).filter(r=>p.res[r]>0);
+        if(have.length){ const r=choice(have); p.res[r]--; }
+        else { p.score-=1; }
+      }
+      const z=choice(ZONES);
+      this.blockedZone=z;
+      this.log.push({r:this.round, who:-1, msg:'抵御失败惩罚：未募军者各扣2分、全体损失1物资，【'+z+'】祭祀区本轮封锁'});
+      this.barbFailedPrev=false; this.barbPenaltyPlayers=[];
+    } else {
+      this.blockedZone=null;
+    }
+    this.army={}; this.armyTotal=0;
+    this.barbNeed=3+this.round;
+    for(const p of this.players) p.armyDone=false;
+    this.log.push({r:this.round, who:-1, msg:'蛮族来袭！需上缴价值 '+this.barbNeed+' 的物资募军（募军每轮限1次）'});
+  }
+  settleBarb(){
+    if(!this.dlcBarbarian) return;
+    if(this.armyTotal>=this.barbNeed){
+      this.log.push({r:this.round, who:-1, msg:'抵御成功！军库 '+this.armyTotal+'/'+this.barbNeed});
+      this.barbFailedPrev=false; this.barbPenaltyPlayers=[];
+    } else {
+      this.log.push({r:this.round, who:-1, msg:'抵御失败！军库 '+this.armyTotal+'/'+this.barbNeed+'（下轮将受惩罚）'});
+      this.barbFailedPrev=true;
+      this.barbPenaltyPlayers=this.players.filter(p=>!p.armyDone).map(p=>p.pid);
+    }
+  }
+
+  /* 中立部族（2人局） */
+  neutralPhase(){
+    if(!this.neutral) return;
+    const spot=choice(Object.keys(GATHER));
+    const d=GATHER[spot];
+    const gain={...d.gain};
+    if(d.bonus && Math.random()<d.bonus[2]) gain[d.bonus[0]]=(gain[d.bonus[0]]||0)+d.bonus[1];
+    for(const r in gain) this.neutralRes[r]=(this.neutralRes[r]||0)+gain[r];
+    const zs=ZONES.slice().sort(()=>Math.random()-0.5);
+    for(const z of zs){
+      const avail=this.zones[z].filter(s=>s.owner===null && (this.neutralRes[s.res]||0)>0);
+      if(avail.length){
+        const s=choice(avail);
+        this.neutralRes[s.res]--;
+        s.owner=-1;
+        if(this.zones[z].every(ss=>ss.owner!==null)) this.triggerBig(null,z);
+        break;
+      }
+    }
+    const zs2=ZONES.slice().sort(()=>Math.random()-0.5);
+    for(const z of zs2){
+      if(this.sanctuaries[z].length<this.totemLimit){ this.sanctuaries[z].push(-1); break; }
+    }
+  }
+
+  /* 行动执行 */
+  execute(p, act){
+    const kind=act[0];
+    const cost=this.actionCost(act);
+    if(cost===null || p.workers<cost) return;
+    if(kind==='craft'){
+      const d=CRAFT[act[1]];
+      const need={...d.need};
+      if(p.job==='铸炉工匠' && need['火种']) delete need['火种'];
+      for(const r in need) if((p.res[r]||0)<need[r]) return;
+    }
+    p.workers-=cost;
+    if(kind==='sac') this.doSac(p, act[1], act[2]);
+    else if(kind==='big_sac'){ this.doBigSac(p, act[1]); }
+    else if(kind==='gather') this.doGather(p, act[1]);
+    else if(kind==='craft') this.doCraft(p, act[1]);
+    else if(kind==='totem') this.doTotem(p, act[1]);
+    else if(kind==='tribute') this.doTribute(p, act[1]);
+    else if(kind==='army') this.armyAction(p, act[1]);
+  }
+  actionCost(act){
+    const kind=act[0];
+    if(kind==='sac'||kind==='dual_sac'||kind==='tribute'||kind==='army') return 0;
+    if(kind==='totem'||kind==='craft') return 1;
+    if(kind==='big_sac') return 1;
+    if(kind==='gather'){
+      const s=act[1];
+      if(s in GATHER) return 1;
+      if(s in DUAL) return 2;
+      if(s in TRIPLE) return 3;
+      return 1;
+    }
+    return 1;
+  }
+  doTribute(p,res){
+    if(p.tributeDone || p.rank>=3) return;
+    const hi=Object.keys(p.res).filter(r=>BASE_VALUES[r]>=4 && (p.res[r]||0)>=2);
+    if(!hi.length) return;
+    let t=res;
+    if(!hi.includes(t)) t=hi[0];
+    p.res[t]-=2;
+    p.rank++;
+    p.tributeDone=true;
+    if(p.rank===3 && !this.officialZone){
+      this.officialZone=[{res:'谷物',val:2,owner:null},{res:'木材',val:2,owner:null},{res:'野果',val:3,owner:null},{res:'兽肉',val:3,owner:null}];
+    }
+  }
+  armyAction(p,res){
+    if(p.armyDone || (p.res[res]||0)<1) return;
+    p.res[res]--;
+    this.army[res]=(this.army[res]||0)+1;
+    this.armyTotal+=BASE_VALUES[res];
+    p.armyDone=true;
+  }
+  doSac(p,z,res){
+    if(z==='官祀'){ return this.officialSac(p,res); }
+    if(this.blockedZone===z) return;
+    const zone=this.zones[z];
+    const slot=zone.find(s=>s.res===res && s.owner===null);
+    if(!slot || (p.res[res]||0)<=0) return;
+    p.res[res]--;
+    slot.owner=p.pid;
+    const gain=slot.val+this.sanBonus(p.pid,z);
+    p.score+=gain;
+    p.zonePlace[z]++;
+    if(zone.every(s=>s.owner!==null)) this.triggerBig(p,z);
+  }
+  officialSac(p,res){
+    if(!this.officialZone) return;
+    const slot=this.officialZone.find(s=>s.res===res && s.owner===null);
+    if(!slot || (p.res[res]||0)<=0) return;
+    p.res[res]--;
+    slot.owner=p.pid;
+    p.score+=slot.val;
+    p.zonePlace['官祀']=(p.zonePlace['官祀']||0)+1;
+    if(this.officialZone.every(s=>s.owner!==null)){
+      p.score+=5;
+      this.log.push({r:this.round, who:p.pid, msg:'官祀满槽 +5分，清空'});
+      for(const s of this.officialZone) s.owner=null;
+    }
+  }
+  doBigSac(p,z){
+    if(this.blockedZone===z) return;
+    const zone=this.zones[z];
+    const avail=zone.filter(s=>s.owner===null && (p.res[s.res]||0)>0);
+    if(avail.length<2) return;
+    const picks=avail.slice(0,2);
+    for(const s of picks){
+      p.res[s.res]--;
+      s.owner=p.pid;
+      p.score+=s.val+this.sanBonus(p.pid,z);
+      p.zonePlace[z]++;
+    }
+    if(zone.every(s=>s.owner!==null)) this.triggerBig(p,z);
+  }
+  triggerBig(p,z){
+    const zone=this.zones[z];
+    this.zonesCompleted[z]++;
+    if(p!==null && p.pid>=0){
+      let bonus=5;
+      if(p.job==='大祭师') bonus+=2;
+      if(this.controller(z)===p.pid) bonus+=3;
+      p.score+=bonus;
+      p.bigSac++;
+    }
+    for(const s of zone){
+      if(s.owner!==null && s.owner>=0 && s.owner<this.n) this.players[s.owner].score+=2;
+    }
+    for(const s of zone) s.owner=null;
+  }
+  doGather(p,spot){
+    this.used.add(spot);
+    this.spotUse[spot]=(this.spotUse[spot]||0)+1;
+    let d=GATHER[spot]||DUAL[spot]||TRIPLE[spot];
+    if(!d) return;
+    const gain={...d.gain};
+    if(d.bonus && Math.random()<d.bonus[2]) gain[d.bonus[0]]=(gain[d.bonus[0]]||0)+d.bonus[1];
+    if(p.job==='丰饶使者' && spot in GATHER){
+      if(Math.random()<0.5){
+        let main=Object.keys(gain).reduce((a,b)=>BASE_VALUES[a]>=BASE_VALUES[b]?a:b);
+        gain[main]=(gain[main]||0)+1;
+      }
+    }
+    for(const r in gain) p.res[r]=(p.res[r]||0)+gain[r];
+  }
+  doCraft(p,spot){
+    this.used.add(spot);
+    this.spotUse[spot]=(this.spotUse[spot]||0)+1;
+    const d=CRAFT[spot];
+    const need={...d.need};
+    if(p.job==='铸炉工匠' && need['火种']) delete need['火种'];
+    for(const r in need) if((p.res[r]||0)<need[r]) return;
+    for(const r in need) p.res[r]-=need[r];
+    for(const r in d.gain) p.res[r]=(p.res[r]||0)+d.gain[r];
+    if(p.job==='铸炉工匠') p.res['火种']=(p.res['火种']||0)+1;
+  }
+  doTotem(p,z){
+    this.used.add('圣地-'+z);
+    this.spotUse['圣地-'+z]++;
+    if(this.sanctuaries[z].length>=this.totemLimit) return;
+    p.totems--;
+    this.sanctuaries[z].push(p.pid);
+    if(p.job==='图腾守护者'){
+      const opts=SANCT_RES[z];
+      const pick=opts[Math.floor(Math.random()*opts.length)];
+      p.res[pick]=(p.res[pick]||0)+1;
+    }
+  }
+  checkEnd(){
+    if(this.round>=this.roundsTotal) return true;
+    if(this.endMode==='fixed_score'){
+      for(const p of this.players){
+        if(p.score>=this.fixedTarget){ this.endTrigger='fixed_score'; return true; }
+      }
+    }
+    return false;
+  }
+  endScoring(){
+    for(const p of this.players){
+      const controls=ZONES.filter(z=>this.controller(z)===p.pid).length;
+      p.score+=controls*4;
+      const totalRes=Object.values(p.res).reduce((a,b)=>a+b,0);
+      p.score+=Math.floor(totalRes/3);
+      p.score+=p.bigSac*2;
+      if(ZONES.every(z=>p.zonePlace[z]>0)) p.score+=5;
+    }
+  }
+}
+/* ================================================================
+   UI 渲染与交互
+   ================================================================ */
+const $=id=>document.getElementById(id);
+const state={ setupN:4, setupH:1, setupMode:'rounds', setupRounds:9, setupTarget:FIXED_TARGETS[4], dlc:false, dlcTribute:false, dlcBarbarian:false, game:null, ais:[], turnIdx:0, active:[], skipOrder:[], ended:false, busy:false, humanJobs:{}, aiParams:[] };
+const autoMode = (location.hash==='#auto');
+
+/* ---------- 设置界面 ---------- */
+function setN(delta){
+  let v=state.setupN+delta; v=Math.max(2,Math.min(6,v));
+  const oldDef=FIXED_TARGETS[state.setupN];
+  state.setupN=v;
+  if(state.setupTarget===oldDef){ state.setupTarget=FIXED_TARGETS[v]; $('tInput').value=state.setupTarget; }
+  if(state.setupH>v) state.setupH=v;
+  $('nVal').textContent=v; $('hVal').textContent=state.setupH;
+  renderPlayersSetup();
+}
+function setRounds(delta){
+  let v=state.setupRounds+delta; v=Math.max(5,Math.min(15,v));
+  state.setupRounds=v; $('rInput').value=v;
+}
+function setTarget(delta){
+  let v=state.setupTarget+delta; v=Math.max(100,Math.min(400,v));
+  state.setupTarget=v; $('tInput').value=v;
+}
+function setH(delta){
+  let v=state.setupH+delta; v=Math.max(1,Math.min(state.setupN,v));
+  state.setupH=v; $('hVal').textContent=v; renderPlayersSetup();
+}
+function renderPlayersSetup(){
+  const box=$('playersSetup'); box.innerHTML='';
+  for(let i=0;i<state.setupN;i++){
+    const human=i<state.setupH;
+    const row=document.createElement('div'); row.className='p-row';
+    const dot=document.createElement('span'); dot.className='dot';
+    dot.style.background=PLAYER_COLORS[i];
+    const who=document.createElement('span'); who.className='who';
+    who.textContent=(human?'玩家':'AI')+(i+1);
+    if(!state.dlc){
+      const span=document.createElement('span'); span.className='hint';
+      span.style.cssText='font-size:13px;color:var(--sub);flex:1;max-width:220px;';
+      span.textContent='无职业（基础版）';
+      const hint=document.createElement('span'); hint.className='hint';
+      hint.textContent=human?'基础版无职业':'AI 自动';
+      row.appendChild(dot); row.appendChild(who); row.appendChild(span); row.appendChild(hint);
+      box.appendChild(row);
+      continue;
+    }
+    const sel=document.createElement('select');
+    for(const j of JOB_NAMES){
+      const o=document.createElement('option'); o.value=j; o.textContent=j;
+      sel.appendChild(o);
+    }
+    if(human){
+      state.humanJobs[i]=state.humanJobs[i]||choice(JOB_NAMES);
+      sel.value=state.humanJobs[i];
+      sel.onchange=()=>{state.humanJobs[i]=sel.value;};
+    } else {
+      sel.disabled=true;
+    }
+    const hint=document.createElement('span'); hint.className='hint';
+    hint.textContent=human?'选择职业':'AI 自动';
+    row.appendChild(dot); row.appendChild(who); row.appendChild(sel); row.appendChild(hint);
+    box.appendChild(row);
+  }
+}
+
+/* ---------- 渲染：四区 ---------- */
+function renderZones(){
+  const g=state.game, box=$('zonesGrid'); box.innerHTML='';
+  const cur=g.players[g.order[state.turnIdx]];
+  const humanTurn=cur.pid<state.setupH && !autoMode && !state.ended;
+  for(const z of ZONES){
+    const card=document.createElement('div'); card.className='zone-card'+(g.blockedZone===z?' blocked':'');
+    card.style.borderTopColor=ZONE_COLOR[z];
+    const h=document.createElement('h4');
+    h.innerHTML=`<span>${z}祭祀区${g.blockedZone===z?'（封锁）':''}</span><span class="base">满槽 ${ZONE_LAYOUT[z].reduce((a,r)=>a+r[1],0)} 分</span>`;
+    const bc=document.createElement('div'); bc.className='bigcnt';
+    bc.textContent=`已大祭 ${g.zonesCompleted[z]} 次 · 进度 ${g.zoneFilled(z)}/6`;
+    const slots=document.createElement('div'); slots.className='slots';
+    for(const s of g.zones[z]){
+      const div=document.createElement('div');
+      div.className='slot'+(s.owner!==null?' filled':'');
+      const ico=document.createElement('span'); ico.className='res-ico'; ico.textContent=s.res[0];
+      const nm=document.createElement('span'); nm.className='res-name'; nm.textContent=s.res;
+      const val=document.createElement('span'); val.className='res-val'; val.textContent=s.val+'分';
+      div.appendChild(ico); div.appendChild(nm); div.appendChild(val);
+      const mk=document.createElement('span'); mk.className='mark';
+      if(s.owner!==null){ mk.style.background=s.owner>=0?PLAYER_COLORS[s.owner]:'#b8ac94'; mk.title=s.owner>=0?nameOf(s.owner):'中立'; }
+      else { mk.style.background='#e3dccb'; }
+      div.appendChild(mk);
+      if(s.owner===null && humanTurn && g.blockedZone!==z && (cur.res[s.res]||0)>0){
+        div.classList.add('can-sac');
+        div.title='点击献祭 '+s.res+'（不消耗工人）';
+        div.onclick=()=>{ runAction(['sac',z,s.res]); };
+      }
+      slots.appendChild(div);
+    }
+    card.appendChild(h); card.appendChild(bc); card.appendChild(slots);
+    box.appendChild(card);
+  }
+  if(g.dlcTribute && g.officialZone){
+    const card=document.createElement('div'); card.className='zone-card official';
+    card.style.borderTopColor='#8a6a2f';
+    const h=document.createElement('h4');
+    h.innerHTML=`<span>官祀区（太守专属）</span><span class="base">满槽 10 分</span>`;
+    const bc=document.createElement('div'); bc.className='bigcnt';
+    bc.textContent=`进度 ${g.officialZone.filter(x=>x.owner!==null).length}/4`;
+    const slots=document.createElement('div'); slots.className='slots';
+    for(const s of g.officialZone){
+      const div=document.createElement('div');
+      div.className='slot'+(s.owner!==null?' filled':'');
+      const ico=document.createElement('span'); ico.className='res-ico'; ico.textContent=s.res[0];
+      const nm=document.createElement('span'); nm.className='res-name'; nm.textContent=s.res;
+      const val=document.createElement('span'); val.className='res-val'; val.textContent=s.val+'分';
+      div.appendChild(ico); div.appendChild(nm); div.appendChild(val);
+      const mk=document.createElement('span'); mk.className='mark';
+      if(s.owner!==null){ mk.style.background=PLAYER_COLORS[s.owner]; mk.title=nameOf(s.owner); }
+      else mk.style.background='#e3dccb';
+      div.appendChild(mk);
+      if(s.owner===null && humanTurn && cur.rank===3 && (cur.res[s.res]||0)>0){
+        div.classList.add('can-sac');
+        div.title='点击向官祀献祭 '+s.res;
+        div.onclick=()=>{ runAction(['sac','官祀',s.res]); };
+      }
+      slots.appendChild(div);
+    }
+    card.appendChild(h); card.appendChild(bc); card.appendChild(slots);
+    box.appendChild(card);
+  }
+}
+/* ---------- 渲染：圣地 ---------- */
+function renderSanct(){
+  const g=state.game, box=$('sanctRow'); box.innerHTML='';
+  for(const z of ZONES){
+    const card=document.createElement('div'); card.className='sanct-card';
+    const h=document.createElement('h5'); h.textContent=`${z}圣地（${SANCT_ICON[z]}）`;
+    const ctl=document.createElement('div'); ctl.className='ctl';
+    const c=g.controller(z);
+    if(c===null) ctl.innerHTML=`<span class="cname">无控制</span>`;
+    else if(c<0) ctl.innerHTML=`<span class="cname" style="color:#8a7a5c">中立部族</span>`;
+    else ctl.innerHTML=`<span class="cname" style="color:${PLAYER_COLORS[c]}">${nameOf(c)}</span> 控制`;
+    const tots=document.createElement('div'); tots.className='totems';
+    for(const t of g.sanctuaries[z]){
+      const tt=document.createElement('span'); tt.className='totem';
+      tt.style.background=t>=0?PLAYER_COLORS[t]:'#b8ac94';
+      tots.appendChild(tt);
+    }
+    card.appendChild(h); card.appendChild(ctl); card.appendChild(tots);
+    box.appendChild(card);
+  }
+}
+/* ---------- 渲染：行动位 ---------- */
+function renderActions(){
+  const g=state.game;
+  const p=g.players[g.order[state.turnIdx]];
+  const box=$('actionsWrap'); box.innerHTML='';
+  const human=p.pid<state.setupH;
+  if(p.workers<=0){
+    const tip=document.createElement('div');
+    tip.className='w0tip';
+    tip.textContent='已无工人：仍可点击祭祀区槽位献祭（献祭不耗工人），或点击「跳过」结束本轮';
+    box.appendChild(tip);
+  }
+  const fmt=(d)=>{ const ks=Object.keys(d); return ks.map(k=>d[k]+k).join('+'); };
+  const add=(label,enabled,onclick,costTxt,outTxt)=>{
+    const b=document.createElement('button');
+    b.className='act-btn'+(enabled?' can':' cant')+(g.used.has(label)?' used':'');
+    b.innerHTML=(costTxt?`<span class="cost">${costTxt}</span>`:'')+label+(outTxt?`<span class="aw">${outTxt}</span>`:'');
+    if(enabled && human && !state.ended){ b.onclick=onclick; }
+    b.disabled=!human;
+    box.appendChild(b);
+  };
+  const usableSpot=s=>!g.used.has(s);
+  for(const s in GATHER){
+    const d=GATHER[s], en=usableSpot(s)&&p.workers>=d.w;
+    let out=fmt(d.gain);
+    if(d.bonus) out+=` · ${Math.round(d.bonus[2]*100)}%额外${d.bonus[1]}${d.bonus[0]}`;
+    add(s,en,()=>doAction(['gather',s]),d.w+'工',out);
+  }
+  for(const s in DUAL){
+    const d=DUAL[s], en=usableSpot(s)&&p.workers>=d.w;
+    add(s,en,()=>doAction(['gather',s]),d.w+'工',fmt(d.gain));
+  }
+  for(const s in TRIPLE){
+    const d=TRIPLE[s], en=usableSpot(s)&&p.workers>=d.w;
+    add(s,en,()=>doAction(['gather',s]),d.w+'工',fmt(d.gain));
+  }
+  if(p.workers>=1) add('追祭',true,()=>pickBigSac(),'1工','无次数限制 · 放2个不同祭品 · 满6槽触发奖励');
+  else add('追祭',false,null,'1工','无次数限制 · 放2个不同祭品 · 满6槽触发奖励');
+  for(const s in CRAFT){
+    const d=CRAFT[s];
+    let need={...d.need};
+    if(p.job==='铸炉工匠'&&need['火种']) delete need['火种'];
+    const en=usableSpot(s)&&p.workers>=d.w&&Object.keys(need).every(r=>(p.res[r]||0)>=need[r]);
+    add(s,en,()=>doAction(['craft',s]),d.w+'工',`耗${fmt(need)} → ${fmt(d.gain)}`);
+  }
+  for(const z of ZONES){
+    const en=usableSpot('圣地-'+z)&&p.workers>=1&&p.totems>0&&g.sanctuaries[z].length<g.totemLimit;
+    add('圣地·'+z,en,()=>doAction(['totem',z]),'1工',`立图腾 · 控制者每轮+1（${SANCT_RES[z].join('/')}）`);
+  }
+  if(g.dlcTribute){
+    const hi=Object.keys(p.res).filter(r=>BASE_VALUES[r]>=4 && p.res[r]>=2);
+    const can=!p.tributeDone && p.rank<3 && hi.length>0;
+    const rankName=['无官爵','里正','亭长','太守'][p.rank];
+    add('上贡',can,()=>pickTribute(),'2高值物资',`晋${['里正','亭长','太守'][p.rank]||'官爵'} · 每轮限1次`);
+  }
+  if(g.dlcBarbarian){
+    const can=!p.armyDone && Object.keys(p.res).some(r=>p.res[r]>0);
+    add('募军',can,()=>pickArmy(),'1物资',`投入军库 ${g.armyTotal}/${g.barbNeed} · 每轮限1次`);
+  }
+}
+/* ---------- 渲染：玩家条 ---------- */
+function nameOf(pid){ return (pid<state.setupH?'玩家':'AI')+(pid+1); }
+function renderPlayers(){
+  const g=state.game, box=$('playersStrip'); box.innerHTML='';
+  for(const p of g.players){
+    const card=document.createElement('div'); card.className='pl-card';
+    if(g.order[state.turnIdx]===p.pid && !state.ended) card.classList.add('active');
+    card.style.borderLeftColor=PLAYER_COLORS[p.pid];
+    const head=document.createElement('div'); head.className='phead';
+    head.innerHTML=`<span class="pname">${nameOf(p.pid)}</span>
+      <span class="job-tag">${p.job||'无职业'}</span>
+      <span class="score">${p.score}</span>`;
+    const meta=document.createElement('div'); meta.className='pmeta';
+    meta.innerHTML=`<span>工人 ${p.workers}</span><span>图腾 ${p.totems}</span><span>大祭 ${p.bigSac}</span>
+      ${g.dlcTribute?`<span>官爵 ${['无','里正','亭长','太守'][p.rank]}</span>`:''}
+      <span class="${p.pid<state.setupH?'human':'ai'}">${p.pid<state.setupH?'人类':'AI'}</span>`;
+    const pres=document.createElement('div'); pres.className='pres';
+    for(const r in p.res){
+      if(p.res[r]>0){
+        const c=document.createElement('span'); c.className='chip';
+        c.innerHTML=`${r} <b>${p.res[r]}</b>`; pres.appendChild(c);
+      }
+    }
+    const pas=document.createElement('div'); pas.className='passive'; pas.textContent=p.job?JOB_DESC[p.job]:'基础版：无职业被动';
+    card.appendChild(head); card.appendChild(meta); card.appendChild(pres); card.appendChild(pas);
+    box.appendChild(card);
+  }
+}
+/* ---------- 渲染：日志 ---------- */
+function renderLog(){
+  const g=state.game, list=$('logList');
+  const recent=g.log.slice(-40);
+  list.innerHTML=recent.map(e=>`<div class="log-entry"><span class="t">R${e.r}</span><span class="who" style="color:${PLAYER_COLORS[((e.who%6)+6)%6]}">${nameOf(e.who)}</span> ${e.msg}</div>`).join('');
+  list.scrollTop=list.scrollHeight;
+}
+function logAct(p,msg){ state.game.logEntry(p.pid,msg); }
+function renderBarbBar(){
+  const g=state.game, bar=$('barbBar');
+  if(g.dlcBarbarian && g.round>0){
+    bar.classList.remove('hidden');
+    bar.innerHTML=`<b>蛮族军情</b>：需募价值 ${g.barbNeed} · 军库 ${g.armyTotal}/${g.barbNeed}${g.blockedZone?` · 【${g.blockedZone}】已被封锁`:''}`;
+  } else bar.classList.add('hidden');
+}
+function renderAll(){ renderBarbBar(); renderZones(); renderSanct(); renderActions(); renderPlayers(); renderLog(); }
+
+/* ---------- 选择弹层 ---------- */
+function openPick(title, items, onPick){
+  $('pickTitle').textContent=title;
+  const list=$('pickList'); list.innerHTML='';
+  for(const it of items){
+    const b=document.createElement('button'); b.className='pick-item';
+    b.innerHTML=`<span style="flex:1">${it.label}</span><span class="cnt">${it.cnt||''}</span><span class="v">${it.v||''}</span>`;
+    b.onclick=()=>{ closePick(); onPick(it.val); };
+    list.appendChild(b);
+  }
+  $('pickOverlay').classList.remove('hidden');
+}
+function closePick(){ $('pickOverlay').classList.add('hidden'); }
+
+/* ---------- 规则·术语 ---------- */
+const HELP_GROUPS = [
+  {t:'基础概念', items:[
+    '<b>工人</b>：每轮每位玩家 5 名。每次行动放置工人到工位；每名玩家每轮行动一次后轮到下一位，全部跳过或用尽工人则进入下一轮。工人用尽后仍可参与祭祀（祭祀不消耗工人），不计入跳过顺序。',
+    '<b>物资</b>：14 种物资（价值 2–7 分），用于献祭与工匠制作；终局时每 3 个库存物资折算 1 分。',
+    '<b>工位</b>：行动区共 6 类——采集 / 工匠 / 双工 / 三工 / 大祭 / 圣地。每轮每工位只能被占用一次（献祭除外，可多次）。',
+  ]},
+  {t:'行动详解', items:[
+    '<b>采集</b>：1 工人，获得基础物资；部分工位 50% 概率额外产出（如伐木→2木材，50% 得 1 火种）。',
+    '<b>工匠</b>：消耗材料制成高级物资——煮盐（1木1火→2盐）、冶铜（1石1火→1青铜）。',
+    '<b>双工 / 三工</b>：深耕、远洋、围猎、开山（2 工人）；冶铜矿、采珠场、草药谷（3 工人）。',
+    '<b>献祭</b>：不消耗工人，消耗 1 个物资放入对应区空槽，得分 = 物资基础分 + 圣地加成；该区放满 6 槽即触发大祭。',
+    '<b>追祭工位</b>：耗 1 工人，一次放 2 个不同祭品；无次数限制，本轮内任意玩家均可多次使用；若恰好放满 6 槽直接触发大祭。',
+  ]},
+  {t:'大祭（核心得分事件）', items:[
+    '任一祭祀区 6 槽放满时触发：<b>触发者 +5 分</b>（大祭师再 +2）、<b>控制者 +3</b>、<b>每物资所有者 +2</b>，然后清空该区重新开始。',
+  ]},
+  {t:'圣地与图腾', items:[
+    '<b>圣地</b>：四区各有圣地，可放图腾争夺。每轮每圣地限操作一次。',
+    '<b>控制</b>：圣地顶端（最后放置）图腾的玩家为控制者，每轮开始时自动获得该圣地 1 个主物资。',
+    '<b>图腾上限</b>：2 人局 3 个、3–4 人局 4 个、5–6 人局 5 个；同色图腾 ≥3 时该圣地加成翻倍（放置 +2）。',
+    '<b>圣地产出</b>：天地（玉石/火种）、江海（鱼鲜/贝壳/珍珠）、山谷（石材/兽肉）、鱼米（谷物/野果）。',
+  ]},
+  {t:'跳过与顺序', items:[
+    '<b>跳过</b>：本轮不再行动（不消耗工人）。下轮行动顺序 = 本轮跳过顺序的逆序（先跳者下轮后行动）。',
+    '<b>星象祭司</b>：每次跳过 +4 分并保留 1 名工人到下轮。',
+  ]},
+  {t:'六职业', items:[
+    '<b>大祭师</b>：触发大祭额外 +2 分。',
+    '<b>铸炉工匠</b>：工匠行动不需火种，且每次额外 +1 火种；起始 +1 木材。',
+    '<b>丰饶使者</b>：单工人采集 50% 几率主产出 +1。',
+    '<b>图腾守护者</b>：立图腾后立即获得 1 个该圣地主物资。',
+    '<b>星象祭司</b>：跳过 +4 分并保留 1 工人。',
+    '<b>万灵先知</b>：每轮开始从控制圣地额外获得 1 个物资。',
+  ]},
+  {t:'四祭祀区', items:[
+    '<b>天地</b>：玉石7/青铜4/火种4/兽骨4/谷物2/木材2 = 23 分。',
+    '<b>江海</b>：珍珠6/火种4/鱼鲜3/贝壳3/盐3/木材2 = 21 分。',
+    '<b>山谷</b>：玉石5/兽骨4/兽肉3/石材3/草药3/木材2 = 20 分。',
+    '<b>鱼米</b>：鱼鲜3/兽肉3/草药3/贝壳3/谷物2/野果2 = 16 分。',
+  ]},
+  {t:'终局', items:[
+    '<b>回合制</b>：满设定回合数（默认 9，可调 5–15）后结算。<b>固定分数制</b>：任意玩家达设定阈值（默认 2人180 / 3人180 / 4人175 / 5人170 / 6人165，可调 100–400）后当前轮结束。',
+    '<b>终局计分</b>：圣地威望 4 分/区 + 物资每 3 个 1 分 + 大祭主持 2 分/次 + 四区均放过祭品（通达）+5 分。',
+  ]},
+  {t:'扩展 DLC', items:[
+    '<b>上贡（官爵）</b>：上贡 2 个同种高价值物资（玉石/珍珠/青铜/火种/兽骨，价值≥4）晋升 1 级官爵：里正（每轮+1低价值物资）→ 亭长（再每轮+1分）→ 太守（再获得专属官祀区，4槽满槽+5分）。每轮限 1 次，不耗工人。',
+    '<b>蛮族入侵（合作募军）</b>：每轮轮初蛮族来袭，需全玩家上缴物资累计价值 ≥（3+轮数）募军（募军行动每轮限 1 次）。轮末未达标则失败：未募军者各扣 2 分、全体损失 1 随机物资、随机 1 个祭祀区下轮封锁。',
+  ]},
+];
+function openHelp(){
+  const list=$('helpList'); list.innerHTML='';
+  for(const grp of HELP_GROUPS){
+    const g=document.createElement('div'); g.className='term-group';
+    let h=`<h5>${grp.t}</h5>`;
+    for(const it of grp.items) h+=`<p>${it}</p>`;
+    g.innerHTML=h;
+    list.appendChild(g);
+  }
+  $('helpOverlay').classList.remove('hidden');
+}
+function closeHelp(){ $('helpOverlay').classList.add('hidden'); }
+
+/* ================================================================
+   行动处理 · 主循环 · 启动
+   ================================================================ */
+function doAction(act){
+  if(state.busy||state.ended) return;
+  const g=state.game, p=g.players[g.order[state.turnIdx]];
+  if(p.pid>=state.setupH) return;
+  if(act[0]==='sac'){
+    const z=act[1];
+    const opts=g.zones[z].filter(s=>s.owner===null && (p.res[s.res]||0)>0);
+    if(!opts.length) return;
+    openPick(`选择在「${z}」放置的祭品`,opts.map(s=>({label:s.res,cnt:'×'+(p.res[s.res]||0),v:s.val+'分',val:s.res})),
+      res=>{ runAction(['sac',z,res]); });
+    return;
+  }
+  runAction(act);
+}
+function runAction(act){
+  const g=state.game, p=g.players[g.order[state.turnIdx]];
+  g.execute(p,act);
+  const z=act[1];
+  if(act[0]==='sac') logAct(p,`献祭 ${act[2]} 于${z}`);
+  else if(act[0]==='big_sac') logAct(p,`追祭：${z}！`);
+  else if(act[0]==='totem') logAct(p,`在${z}圣地立图腾`);
+  else if(act[0]==='gather'||act[0]==='craft') logAct(p,act[1]);
+  else if(act[0]==='tribute') logAct(p,`上贡晋升官爵`);
+  else if(act[0]==='army') logAct(p,`募军：投入1${act[1]}`);
+  renderAll();
+  advance();
+}
+function pickTribute(){
+  const g=state.game, p=g.players[g.order[state.turnIdx]];
+  const opts=Object.keys(p.res).filter(r=>BASE_VALUES[r]>=4 && (p.res[r]||0)>=2);
+  if(!opts.length) return;
+  openPick('上贡高价值物资（2个同种 +1官爵，每轮限1次）',opts.map(t=>({label:t,cnt:'×'+p.res[t],v:'价值'+BASE_VALUES[t],val:t})),
+    t=>{ runAction(['tribute',t]); });
+}
+function pickArmy(){
+  const g=state.game, p=g.players[g.order[state.turnIdx]];
+  const opts=Object.keys(p.res).filter(r=>p.res[r]>0);
+  if(!opts.length) return;
+  openPick('募军：投入1个物资（军库 '+g.armyTotal+'/'+g.barbNeed+'）',opts.map(t=>({label:t,cnt:'×'+p.res[t],v:'价值'+BASE_VALUES[t],val:t})),
+    t=>{ runAction(['army',t]); });
+}
+function pickBigSac(){
+  const g=state.game, p=g.players[g.order[state.turnIdx]];
+  const zones=ZONES.filter(z=>{
+    if(z===g.blockedZone) return false;
+    const avail=g.zones[z].filter(s=>s.owner===null && (p.res[s.res]||0)>0);
+    return avail.length>=3;
+  });
+  if(!zones.length) return;
+  openPick('选择追祭的区域（需放2个祭品）',zones.map(z=>({label:z,cnt:'',v:'',val:z})),z=>{ runAction(['big_sac',z]); });
+}
+/* 跳过 */
+function doSkip(){
+  if(state.busy||state.ended) return;
+  const g=state.game, p=g.players[g.order[state.turnIdx]];
+  if(p.pid>=state.setupH) return;
+  if(p.job==='星象祭司'){
+    p.score+=4; p.reserved+=1;
+    logAct(p,`跳过（星象祭司 +4分，保留1工人）`);
+  } else {
+    logAct(p,`跳过`);
+  }
+  g.skippedRound.push(p.pid);
+  g.activeRound.delete(p.pid);
+  renderAll();
+  advance();
+}
+/* 推进回合：行动后留在原位继续，跳过/无工人则轮转 */
+function advance(){
+  if(state.ended) return;
+  const g=state.game;
+  state.turnIdx=(state.turnIdx+1)%g.order.length;
+  let steps=0;
+  while(steps<g.order.length*2){
+    steps++;
+    const pid=g.order[state.turnIdx];
+    if(!g.activeRound.has(pid)){ state.turnIdx=(state.turnIdx+1)%g.order.length; continue; }
+    handleTurn();
+    return;
+  }
+  endRound();
+}
+function handleTurn(){
+  const g=state.game, p=g.players[g.order[state.turnIdx]];
+  if(!g.activeRound.has(p.pid)){ advance(); return; }
+  updateTopbar();
+  renderAll();
+  if(p.pid<state.setupH && !autoMode){
+    $('phaseTip').textContent=p.workers<=0?'轮到你：已无工人，可点击祭祀区献祭或跳过':'轮到你行动（每人1次，然后轮到下一位）';
+    $('skipBtn').disabled=false;
+  } else {
+    $('phaseTip').textContent=(p.pid<state.setupH?'自动演示中…':'AI 思考中…');
+    $('skipBtn').disabled=true;
+    const ai=state.ais[p.pid];
+    setTimeout(()=>{
+      if(state.ended) return;
+      const act=ai.decide(g,p);
+      if(act[0]==='skip'){
+        if(p.job==='星象祭司'){ p.score+=4; p.reserved+=1; }
+        g.skippedRound.push(p.pid);
+        g.activeRound.delete(p.pid);
+        logAct(p,`跳过`);
+        renderAll();
+        advance();
+      } else {
+        g.execute(p,act);
+        if(act[0]==='sac') logAct(p,`献祭 ${act[2]} 于${act[1]}`);
+        else if(act[0]==='big_sac') logAct(p,`追祭：${act[1]}！`);
+        else if(act[0]==='totem') logAct(p,`在${act[1]}圣地立图腾`);
+        else if(act[0]==='gather'||act[0]==='craft') logAct(p,act[1]);
+        else if(act[0]==='tribute') logAct(p,`上贡晋升官爵`);
+        else if(act[0]==='army') logAct(p,`募军：投入1${act[1]}`);
+        renderAll();
+        advance();
+      }
+    }, autoMode?30:520);
+  }
+}
+function endRound(){
+  const g=state.game;
+  g.settleBarb();
+  if(g.checkEnd()){
+    finishGame();
+    return;
+  }
+  g.round++;
+  g.roundStart();
+  g.barbPhase();
+  g.neutralPhase();
+  const prev=g.order.slice();
+  const remain=g.order.filter(x=>!g.skippedRound.includes(x));
+  const skipP=prev.filter(x=>g.skippedRound.includes(x)).reverse();
+  g.order=remain.concat(skipP);
+  g.skippedRound=[];
+  g.activeRound=new Set();
+  for(let i=0;i<g.n;i++) g.activeRound.add(i);
+  state.turnIdx=0;
+  g.used.clear();
+  g.roundStart();
+  g.neutralPhase();
+  logEntry(g,`—— 第 ${g.round} 轮开始 ——`);
+  updateTopbar();
+  renderAll();
+  handleTurn();
+}
+function logEntry(g,msg){
+  g.log.push({r:g.round,who:-1,msg});
+  renderLog();
+}
+function updateTopbar(){
+  const g=state.game;
+  $('roundNum').textContent=g.round;
+  $('roundTotal').textContent=g.roundsTotal;
+  const p=g.players[g.order[state.turnIdx]];
+  $('turnInfo').innerHTML=`行动中：<span class="pj" style="color:${PLAYER_COLORS[p.pid]}">${nameOf(p.pid)}</span>（${p.job||'无职业'}）`;
+}
+/* 终局 */
+function finishGame(){
+  const g=state.game;
+  g.endScoring();
+  state.ended=true;
+  const order=[...g.players].sort((a,b)=>b.score-a.score);
+  $('endSub').textContent=(g.endTrigger==='fixed_score'?'固定分数模式触发（阈值'+g.fixedTarget+'）':`${g.roundsTotal} 回合制完结`)+` · 共 ${g.round} 轮`;
+  const list=$('endList'); list.innerHTML='';
+  order.forEach((p,i)=>{
+    const card=document.createElement('div'); card.className='pl-card';
+    card.style.borderLeftColor=PLAYER_COLORS[p.pid];
+    const controls=ZONES.filter(z=>g.controller(z)===p.pid).length;
+    const totalRes=Object.values(p.res).reduce((a,b)=>a+b,0);
+    const detail=`威望 ${controls*4} + 物资 ${Math.floor(totalRes/3)} + 大祭 ${p.bigSac*2}${ZONES.every(z=>p.zonePlace[z]>0)?' + 通达 5':''}`;
+    card.innerHTML=`<div class="phead"><span class="rank">#${i+1}</span>
+      <span class="pname">${nameOf(p.pid)}</span>
+      <span class="job-tag">${p.job||'无职业'}</span>
+      <span class="score">${p.score}分</span></div>
+      <div class="end-detail">${detail}</div>`;
+    list.appendChild(card);
+  });
+  $('game').classList.add('hidden');
+  $('end').classList.remove('hidden');
+}
+/* 启动 */
+function startGame(){
+  const jobs=[];
+  state.aiParams=[];
+  for(let i=0;i<state.setupN;i++){
+    if(state.dlc){
+      if(i<state.setupH){ jobs.push(state.humanJobs[i]||choice(JOB_NAMES)); state.aiParams.push(null); }
+      else { jobs.push(choice(JOB_NAMES)); state.aiParams.push({}); }
+    } else {
+      jobs.push(null);
+      if(i<state.setupH) state.aiParams.push(null); else state.aiParams.push({});
+    }
+  }
+  const g=new Game({n:state.setupN, jobs, mode:state.setupMode, rounds:state.setupRounds, fixedTarget:state.setupTarget, tribute:state.dlcTribute, barbarian:state.dlcBarbarian});
+  state.game=g; state.ended=false; state.turnIdx=0;
+  state.ais=[];
+  for(let i=0;i<state.setupN;i++){
+    if(i>=state.setupH || autoMode) state.ais[i]=new HeuristicAI(i,state.aiParams[i]);
+  }
+  g.round=1;
+  g.roundStart();
+  g.barbPhase();
+  g.neutralPhase();
+  g.log.push({r:1,who:-1,msg:`—— 第 1 轮开始（${state.setupN}人 · ${state.setupH}人类）——`});
+  $('setup').classList.add('hidden');
+  $('end').classList.add('hidden');
+  $('game').classList.remove('hidden');
+  handleTurn();
+}
+/* 事件绑定 */
+$('nMinus').onclick=()=>setN(-1);
+$('nPlus').onclick=()=>setN(1);
+$('hMinus').onclick=()=>setH(-1);
+$('hPlus').onclick=()=>setH(1);
+$('rMinus').onclick=()=>setRounds(-1);
+$('rPlus').onclick=()=>setRounds(1);
+$('tMinus').onclick=()=>setTarget(-1);
+$('tPlus').onclick=()=>setTarget(1);
+$('startBtn').onclick=startGame;
+$('againBtn').onclick=()=>{ $('end').classList.add('hidden'); $('setup').classList.remove('hidden'); renderPlayersSetup(); };
+$('skipBtn').onclick=doSkip;
+$('helpBtn').onclick=openHelp;
+$('helpCloseBtn').onclick=closeHelp;
+$('helpOverlay').onclick=(e)=>{ if(e.target.id==='helpOverlay') closeHelp(); };
+document.querySelectorAll('#modeSeg button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    state.setupMode=b.dataset.mode;
+    $('roundsRow').classList.toggle('hidden', state.setupMode!=='rounds');
+    $('targetRow').classList.toggle('hidden', state.setupMode!=='fixed_score');
+  };
+});
+document.querySelectorAll('#dlcSeg button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('#dlcSeg button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    state.dlc=(b.dataset.dlc==='1');
+    renderPlayersSetup();
+  };
+});
+document.querySelectorAll('#dlcExtSeg button').forEach(b=>{
+  b.onclick=()=>{
+    const on=b.classList.toggle('on');
+    if(b.dataset.ext==='tribute') state.dlcTribute=on;
+    else if(b.dataset.ext==='barbarian') state.dlcBarbarian=on;
+  };
+});
+$('rInput').addEventListener('change',()=>{
+  let v=parseInt($('rInput').value,10);
+  if(isNaN(v)) v=state.setupRounds;
+  v=Math.max(5,Math.min(15,v));
+  state.setupRounds=v; $('rInput').value=v;
+});
+$('tInput').addEventListener('change',()=>{
+  let v=parseInt($('tInput').value,10);
+  if(isNaN(v)) v=state.setupTarget;
+  v=Math.max(100,Math.min(400,v));
+  state.setupTarget=v; $('tInput').value=v;
+});
+$('pickOverlay').onclick=(e)=>{ if(e.target.id==='pickOverlay') closePick(); };
+renderPlayersSetup();
+/* 无头测试钩子：file:///…index.html#auto 自动开局 */
+if(location.hash==='#autodlc'){ state.dlc=true; state.dlcTribute=true; state.dlcBarbarian=true; }
+if(location.hash==='#auto'||location.hash==='#autodlc'){
+  setTimeout(()=>{
+    startGame();
+    const iv=setInterval(()=>{
+      if(state.ended){
+        clearInterval(iv);
+        document.title='AUTOLOG::'+JSON.stringify(state.game.log.map(e=>(e.r)+':'+(e.who<0?'-':nameOf(e.who))+':'+e.msg));
+      }
+    },150);
+  },300);
+}
+</script>
+</body>
+</html>
